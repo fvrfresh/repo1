@@ -1,0 +1,41 @@
+.post-container .text-container{
+    background-image: url("/images/post-bg.png");
+    background-size: 100% 100%;
+}
+.post-comment-container .replyIcon{
+    width:2rem;
+    height:2rem;
+}
+.post-comment-container .replyIcon p{
+    width:2rem;
+    height:2rem;
+    line-height: 2rem;
+}
+.post-comment-container .post-content{
+    background-image: url("/images/background-small.png");
+    background-size: contain;
+}
+.post-comment-container .comment-section{
+    background-image: url("/images/background-small.png");
+    background-size: contain;
+}
+.post-comment-container .comment-section .comment-container{
+    padding-left: 4.2rem !important;
+    padding-right: 1.9rem !important;
+}
+.post-comment-container .comment-section .comment-row .replyIcon{
+    transition: opacity 0.7s ease-in-out;
+    color: #007bff;
+    opacity: 0;
+}
+.post-comment-container .comment-section .comment-editor form button{
+    transition: all 0.2s ease-in-out;
+}
+.post-comment-container .comment-section .comment-editor form button:hover{
+    transform-origin: top right;
+    transform: scale(1.1,1.1);
+    box-shadow: 0 0px 10px lightgray;
+}
+.comment-reply-area,.error-pop{
+    display: none;
+}

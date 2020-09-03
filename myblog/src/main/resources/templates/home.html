@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:svg="http://www.w3.org/2000/svg">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="/images/favicon.ico"/>
+    <script src="/js/vue.js" th:src="@{/js/vue.js}"></script>
+    <script th:src="@{/webjars/axios/0.19.0/dist/axios.js}"></script>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script th:src="@{/js/jquery-3.3.1.js}"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script th:src="@{/js/bootstrap.min.js}"></script>
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <link rel="stylesheet" th:href="@{/css/common.css}" type="text/css">
+    <script src="/js/common.js"></script>
+    <!--[if lt IE 9]>
+    <script src="/js/html5shiv.js"></script>
+    <script src="/js/respond.min.js"></script>
+    <![endif]-->
+    <title>长弓林夕 | 主页</title>
+
+</head>
+<body>
+<div id="app">
+    <transition-group appear name="top-appear" tag="div">
+        <div class="header-container fixed-top" key="nav" style="font-size: 1.25rem" th:insert="~{fragments :: head}"></div>
+        <div class="logo-container" key="logo" th:insert="~{fragments :: blog_log}"></div>
+        <div class="carousel-container" key="carousel" style="margin-bottom: 25px">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div id="carouselExampleCaptions" class="carousel slide" data-ride="carousel">
+                        <ol class="carousel-indicators">
+                            <li data-target="#carouselExampleCaptions" data-slide-to="0" class="active"></li>
+                            <li data-target="#carouselExampleCaptions" data-slide-to="1"></li>
+                            <li data-target="#carouselExampleCaptions" data-slide-to="2"></li>
+                        </ol>
+                        <div class="carousel-inner" style="max-height: 400px; max-width: 1110px">
+                            <div v-for="(article,index) in carousel" v-bind:class="{'carousel-item':true,'active': index == 0 ? true: false}" style="max-height: 400px; max-width: 1110px">
+                                <a v-bind:href="'/archive/carousel/' + article.title" alt="/archive/carousel" target="_blank"><img v-bind:src="'/files/' + article.logoFile" class="d-block w-100" alt="..."></a>
+                                <div class="carousel-caption d-none d-md-block">
+                                    <h5>{{ article.title }}</h5>
+                                    <p>{{ article.description }}</p>
+                                </div>
+                            </div>
+                            <!--<div class="carousel-item">
+                                <a href="javascript:;"><img src="images/055-1.jpg" class="d-block w-100" alt="..."></a>
+                                <div class="carousel-caption d-none d-md-block">
+                                    <h5>Second slide label</h5>
+                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                                </div>
+                            </div>
+                            <div class="carousel-item">
+                                <a href="javascript:;"><img src="images/055-1.jpg" class="d-block w-100" alt="..."></a>
+                                <div class="carousel-caption d-none d-md-block">
+                                    <h5>Third slide label</h5>
+                                    <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur.</p>
+                                </div>
+                            </div>-->
+                        </div>
+                        <a class="carousel-control-prev" href="#carouselExampleCaptions" role="button"
+                           data-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                        <a class="carousel-control-next" href="#carouselExampleCaptions" role="button"
+                           data-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Next</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container sidebar-container mb-5" key="post-side">
+            <div class="row justify-content-between">
+                <div class="col-lg-8 col-md-8 col-sm-8">
+                    <div th:insert="~{fragments :: post-simple-template}"></div>
+                    <nav aria-label="Page navigation" key="pagination" >
+                        <ul class="pagination justify-content-end" v-show="pageInfo.totalPage > 1">
+                            <li class="page-item" v-show="pageInfo.current - 1 > 0" v-on:click="pageClick(pageInfo.current - 1)">
+                                <a class="page-link" href="javascript:;" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item" v-for="n in pageInfo.totalPage" v-on:focusin="pageClick(n)"><a class="page-link" href="javascript:;">{{ n }}</a></li>
+                            <li class="page-item" v-show="pageInfo.current + 1 <= pageInfo.totalPage" v-on:click="pageClick(pageInfo.current + 1)">
+                                <a class="page-link" href="javascript:;" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="col-lg-3 col-md-3 col-sm-3" th:insert="~{fragments :: side}"></div>
+            </div>
+        </div>
+    </transition-group>
+    <transition appear name="footer-appear">
+        <div class="footer-container" th:insert="~{fragments :: foot}"></div>
+    </transition>
+
+    <div th:insert="~{fragments :: tb-controller}">
+    </div>
+</div>
+<script>
+
+    var vm = new Vue({
+        el:'#app',
+        data:{
+            currentScrollH: 1,
+            currentScrollT:0,
+            buttonClasses:{
+                'btn': true,
+                'btn-success':false,
+                'float-right':true,
+                'btn-outline-warning':true,
+                'pr-3':true,
+                'pl-3':true
+            },
+            show:false,
+            articles: '',
+            isMain:true,
+            page: {
+                start: 0,
+                count: 3
+            },
+            pageInfo:{
+                total: 0,
+                current:1,
+                totalPage:0
+            },
+            carousel:[],
+            quote:{
+                content:'',
+                author:''
+            },
+            queryTags:'',
+            articleTags:'',
+            mostRecent:[],
+            mostPopular:[],
+            mostRecentComments:[],
+            commentsLogos:[],
+            categories:[]
+        },
+        created:function(){
+            this.scrollT = document.documentElement.scrollTop;
+            this.scrollH = document.documentElement.scrollHeight;
+            window.addEventListener('scroll', this.handleScroll);
+        },
+        mounted() {
+            this.getCarouselArticles();
+            this.getPostsByPage(this.page.start,this.page.count);
+            this.getQuoteForToday();
+            this.getAllTags();
+            this.getMostRecent();
+            this.getMostPopular();
+            this.getMostRecentComments();
+            this.getAllCategories();
+
+        },
+        destroyed () {
+            window.removeEventListener('scroll', this.handleScroll);
+        },
+        methods:{
+            getCarouselArticles: function(){
+                axios.post('/articles/carousel', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    console.log(response.data);
+                    vm.carousel = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getAllCategories:function(){
+                axios.post('/articles/category/all', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    console.log(response.data);
+                    vm.categories = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getMostPopular: function(){
+                axios.post('/posts/mostPopular', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.mostPopular = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getMostRecentComments: function(){
+                axios.post('/articles/mostRecentComments', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    console.log(response.data);
+                    vm.mostRecentComments = response.data.comments;
+                    vm.commentsLogos = response.data.articleLogos;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getMostRecent: function(){
+                axios.post('/articles/mostRecent', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.mostRecent = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getPageWithTag: function(){
+                window.location.href='/tags/queryTags/' + this.queryTags;
+            },
+            getAllTags: function(){
+                axios.post('/sidebar/tags',{
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.articleTags = response.data
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getPostsByPage: function(start, count){
+                let obj = {
+                    'start': start,
+                    'count': count
+                };
+                axios.post('/articles/outline', {
+                    timeout: 1000,
+                    data: obj,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.page.start = start;
+                    vm.articles = response.data.articles;
+                    let total = response.data.total;
+                    let page = total / 3;
+                    if (page < 1){
+                        page = 1;
+                    }else{
+                        page = Math.ceil(total / 3);
+                    }
+                    vm.pageInfo.total = total;
+                    vm.pageInfo.totalPage = page;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            toggleClass:function(){
+                this.buttonClasses["btn-success"]=!this.buttonClasses["btn-success"];
+                this.buttonClasses["btn-outline-warning"]=!this.buttonClasses["btn-outline-warning"];
+            },
+            toTop: function () {
+                if (navigator.userAgent.toLowerCase().indexOf("edge")>0){
+                    $(document).scrollTop(0);
+                    return;
+                }
+                document.documentElement.scrollTo({
+                    top:0,
+                    behavior:'smooth'
+                });
+            },
+            toBottom:function(){
+                if (navigator.userAgent.toLowerCase().indexOf("edge")>0){
+                    $(document).scrollTop(document.documentElement.scrollHeight);
+                    return;
+                }
+                document.documentElement.scrollTo({
+                    top:document.documentElement.scrollHeight,
+                    behavior:'smooth'
+                });
+            },
+            handleScroll: function(event) {
+                this.scrollH = document.documentElement.scrollHeight;
+                this.scrollT = document.documentElement.scrollTop;
+            },
+            pageClick:function (n) {
+                vm.pageInfo.current = n;
+                let startIndex = (n -1) * 3;
+                this.getPostsByPage(startIndex,3);
+            },
+            getQuoteForToday: function(){
+                axios.post('/sidebar/quote',{
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.quote = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            }
+        },
+        computed:{
+            scrollPercent: function(){
+                let sbHeight = window.innerHeight * (window.innerHeight / document.body.offsetHeight) * 4.5;
+                if(this.currentScrollT==0){
+                    sbHeight = 0;
+                }
+                return Number.parseFloat(((this.currentScrollT + sbHeight) / this.currentScrollH).toFixed(3));
+            },
+            scrollT: {
+                get:function () {
+                    return this.currentScrollT;
+                },
+                set:function (newVal) {
+                    this.currentScrollT = newVal;
+                }
+            },
+            scrollH: {
+                get:function () {
+                    return this.currentScrollH;
+                },
+                set:function (newVal) {
+                    this.currentScrollH = newVal;
+                }
+            },
+            computedProgress: function () {
+                let str = ',300';
+                return this.scrollPercent * 225 + str;
+            },
+            defaultStyle:function () {
+                return {
+                    strokeDasharray: '0,300',
+                    transition: 'all .5s ease-in-out'
+                }
+            },
+            computedStyle: function () {
+                return {
+                    strokeDasharray: this.computedProgress,
+                    transition: 'all .5s ease-in-out'
+                }
+            }
+        },
+    });
+    $('body').click(function(){
+        vm.$data.show=false;
+    });
+</script>
+</body>
+</html>

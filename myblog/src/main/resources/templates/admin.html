@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:svg="http://www.w3.org/2000/svg">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="/images/favicon.ico"/>
+    <script src="/js/vue.js" th:src="@{/js/vue.js}"></script>
+    <script th:src="@{/webjars/axios/0.19.0/dist/axios.js}"></script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script th:src="@{/webjars/jquery/3.3.1/jquery.js}"></script>
+    <link th:href="@{/webjars/bootstrap/4.5.0/css/bootstrap.min.css}" rel="stylesheet">
+    <script th:src="@{/webjars/bootstrap/4.5.0/js/bootstrap.min.js}"></script>
+    <link th:rel="stylesheet" th:href="@{/webjars/font-awesome/5.11.2/css/all.css} "/>
+    <link rel="stylesheet" th:href="@{/webjars/simplemde/1.11.2/dist/simplemde.min.css}">
+    <script th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+    <script th:src="@{/webjars/simplemde/1.11.2/dist/simplemde.min.js}"></script>
+    <script th:src="@{/js/validation.js}"></script>
+    <!--    <script th:src="@{/js/admin.js}"></script>-->
+    <!--[if lt IE 9]>
+    <script src="/js/html5shiv.js"></script>
+    <script src="/js/respond.min.js"></script>
+    <![endif]-->
+    <title>长弓林夕 | admin</title>
+    <style>
+        .articles-appear-enter-active, .editor-appear-enter-active, .recycle-appear-enter-active {
+            transition: all .8s ease;
+            opacity: 1;
+        }
+
+        .articles-appear-enter, .editor-appear-enter, .recycle-appear-enter {
+            transform: translateY(10px);
+            opacity: 0;
+            box-shadow: 0 0 5px darkgray;
+        }
+
+        .articles-appear-leave, .editor-appear-leave, .recycle-appear-leave {
+            display: none;
+        }
+
+        .CodeMirror, .CodeMirror-scroll {
+            min-height: 300px;
+        }
+
+        @media only screen and (max-width: 768px) {
+            .navbar .form-inline {
+                justify-content: flex-start !important;
+                padding-right: 0 !important;
+                padding-left: 0 !important;
+
+            }
+
+            .navbar .form-inline a:first-child {
+                width: 20% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="javascript:;">长弓林夕 | Admin</a>
+            <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor01"
+                    aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="navbar-collapse collapse" id="navbarColor01" style="">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a v-bind:class="articlesClass" href="javascript:;"
+                           v-on:click.prevent="showAccordingly($event)">所有文章</a>
+                    </li>
+                    <li class="nav-item">
+                        <a v-bind:class="editorClass" href="javascript:;" v-on:click.prevent="showAccordingly($event)">写文章</a>
+
+                    </li>
+                    <li class="nav-item">
+                        <a v-bind:class="recycleClass" href="javascript:;" v-on:click.prevent="showAccordingly($event)">回收站</a>
+                    </li>
+                </ul>
+                <div class="form-inline col-lg-2 col-md-3 col-sm-3 justify-content-between pr-0 pl-4">
+                    <a class="mr-sm-0 nav-link d-lg-inline-block p-0" href="javascript:;"><img class="w-55 h-55"
+                                                                                                    src="/images/avatar3.png"
+                                                                                                    alt="avatar"
+                                                                                                    style="width: 40px;height:40px;"/></a>
+                    <a class="my-2 my-sm-0 text-decoration-none mr-3" href="javascript:;" style="color: darkgray">管理员</a>
+                    <a class="my-2 my-sm-0 text-decoration-none fa fa-power-off" href="/logout" title="注销" style="color: darkgray"></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <transition-group name="articles-appear" tag="div">
+            <div class="row row-cols-1 row-cols-md-4  row-cols-sm-2 align-items-center mt-3" v-show="showObj.showAll"
+                 key="mainRow">
+                <div class="col mb-4" v-for="(article, index) in articles" v-bind:key="article.title">
+                    <div class="card h-75 text-dark bg-light mb-3">
+                        <div class="card-header font-italic">发布于：{{ article.createdAt }}</div>
+                        <div class="card-body">
+                            <h4 class="card-title">{{ article.title }}</h4>
+                            <p class="card-text">{{ article.description | truncateContent }}</p>
+                        </div>
+                        <div class="card-body pt-0">
+                            <a href="javascript:;" class="card-link" v-on:click="editArticle(article.title,article.description)">编辑</a>
+                            <a href="javascript:;" class="card-link" v-on:click="deleteArticle(article.title,index)">删除</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav aria-label="Page navigation" key="pagination" v-show="showObj.showAll">
+                <ul class="pagination justify-content-end" v-show="pageInfo.totalPage > 1">
+                    <li class="page-item" v-show="pageInfo.current - 1 > 0" v-on:click="pageClick(pageInfo.current - 1)">
+                        <a class="page-link" href="javascript:;" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item" v-for="n in pageInfo.totalPage" v-on:focusin="pageClick(n)"><a class="page-link" href="javascript:;">{{ n }}</a></li>
+                    <li class="page-item" v-show="pageInfo.current + 1 <= pageInfo.totalPage" v-on:click="pageClick(pageInfo.current + 1)">
+                        <a class="page-link" href="javascript:;" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="row mt-5" v-show="showObj.showAll && showObj.showArticleEditor" key="articleEditor">
+                <div class="col-md-12">
+                    <form method="post" action="/admin/articles">
+                        <div class="form-row">
+                            <div class="form-group col-md-3 pl-1">
+                                <label for="titleEditor">标题：</label>
+                                <input type="text" id="titleEditor" placeholder="Title" autocomplete="off"
+                                       aria-describedby="validationServerFeedbackEditor" required maxlength="20" minlength="5"
+                                       v-bind:class="titleInput" v-on:change="validateTitle"
+                                       v-model="articleEditorData.title" readonly/>
+                            </div>
+                            <div class="form-group col-md-3 pl-1">
+                                <label for="categoryEditor">类别：</label>
+                                <select class="form-control" id="categoryEditor" required v-model="articleEditorData.category">
+                                    <option selected value="programming">编程</option>
+                                    <option value="casual">随笔</option>
+                                    <option value="hometown">故乡</option>
+                                    <option value="thinking">思考</option>
+                                    <option value="travel">旅行</option>
+                                    <option value="learning">学习</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-5 pl-1">
+                                <label for="descriptionEditor">简介:</label>
+                                <input type="text" id="descriptionEditor" placeholder="简介" autocomplete="off" required
+                                       minlength="18" maxlength="25"
+                                       class="form-control" v-model="articleEditorData.description"/>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-between">
+                            <div class="form-group col-md-11">
+                                <label for="contentEditor">内容：</label>
+                                <textarea type="text" rows="4" id="contentEditor" placeholder="撰写文章" class="form-control"
+                                          required minlength="100"
+                                          autocomplete="off" ></textarea>
+                            </div>
+                            <div class="form-group col-md-1" style="margin-top: 1.97rem !important;">
+                                <div class="btn btn-primary btn-lg w-100" v-on:click="submitUpdate($event)">提交</div>
+                                <div class="btn btn-secondary btn-lg w-100 mt-4" v-on:click="cancelUpdate($event)">取消</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition-group>
+        <transition name="editor-appear">
+            <div class="row mt-5" v-show="showObj.showEditor">
+                <div class="col-md-12">
+                    <form class="needs-validation" novalidate method="post" action="/admin/articles" enctype="multipart/form-data"
+                          th:action="@{/admin/articles}" th:object="${article}">
+
+                        <div class="form-row">
+                            <div class="form-group col-md-3 pl-1">
+                                <label for="title">标题：</label>
+                                <input type="text" id="title" placeholder="Title" autocomplete="off"
+                                       aria-describedby="validationServerFeedback" required maxlength="20" minlength="5"
+                                       v-bind:class="titleInput" th:field="*{title}" v-on:change="validateTitle"
+                                       v-model="titleField"/>
+                                <div id="validationServerFeedback" class="invalid-feedback">
+                                    字符长度不在5-20之间 or 标题已占用！
+                                </div>
+                            </div>
+                            <div class="form-group col-md-3 pl-1">
+                                <label for="category">类别：</label>
+                                <select class="form-control" id="category" th:field="*{category}" required>
+                                    <option selected value="programming">编程</option>
+                                    <option value="casual">随笔</option>
+                                    <option value="hometown">故乡</option>
+                                    <option value="thinking">思考</option>
+                                    <option value="travel">旅行</option>
+                                    <option value="learning">学习</option>
+                                    <option value="featured" style="background: wheat;color: black">轮播</option>
+                                </select>
+                                <div class="valid-feedback">
+                                    OK!
+                                </div>
+                            </div>
+                            <div class="form-group col-md-5 pl-1">
+                                <label for="description">简介:</label>
+                                <input type="text" id="description" placeholder="简介" autocomplete="off" required
+                                       minlength="18" maxlength="50"
+                                       class="form-control" th:field="*{description}"/>
+                                <div class="invalid-feedback">
+                                    不能超过50个字，不能少于18个字！
+                                </div>
+                                <div class="valid-feedback">
+                                    OK!
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-group col-md-11 pl-0 pr-0 mb3">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="inputGroupFile" name="logoMultipartFile" aria-describedby="inputGroupFileAddon04" required accept="image/*">
+                                <label class="custom-file-label" for="inputGroupFile">选择一张封面图片</label>
+                            </div>
+                            <div class="invalid-feedback">
+                                文件格式不对
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-between">
+                            <div class="form-group col-md-11">
+                                <label for="content">内容：</label>
+                                <textarea type="text" rows="4" id="content" placeholder="撰写文章" class="form-control"
+                                          required minlength="100"
+                                          autocomplete="off" th:field="*{content}"></textarea>
+                                <div class="invalid-feedback">
+                                    文章字数不能少于100！
+                                </div>
+                            </div>
+                            <div class="form-group col-md-1" style="margin-top: 1.85rem !important;">
+                                <button class="btn btn-primary btn-lg w-100" type="submit">提交</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition>
+        <transition-group name="recycle-appear" tag="div">
+            <div class="row row-cols-1 row-cols-md-4  row-cols-sm-2 align-items-center mt-3"
+                 v-show="showObj.showRecycle" key="recycleRow">
+                <div class="col mb-4" v-for="(article, index) in recycleArticles" v-bind:key="article.title">
+                    <div class="card h-75 text-white bg-secondary mb-3">
+                        <div class="card-header font-italic">删除于：{{ article.deletedAt }}</div>
+                        <div class="card-body">
+                            <h4 class="card-title">{{ article.title }}</h4>
+                            <p class="card-text">{{ article.description | truncateContent }}</p>
+                        </div>
+                        <div class="card-body">
+                            <a href="javascript:;" class="card-link text-white" v-on:click="restoreArticle(article.title, index)">还原</a>
+                            <a href="javascript:;" class="card-link text-white" v-on:click="deleteRecycleArticle(article.title, index)">彻底删除</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav aria-label="Page navigation" v-show="showObj.showRecycle" key="page">
+                <ul class="pagination justify-content-end" v-show="recyclePageInfo.totalPage > 1">
+                    <li class="page-item" v-show="recyclePageInfo.current - 1 > 0" v-on:click="recyclePageClick(recyclePageInfo.current - 1)">
+                        <a class="page-link" href="javascript:;" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item" v-for="n in recyclePageInfo.totalPage" v-on:focusin="recyclePageClick(n)"><a class="page-link" href="javascript:;">{{ n }}</a></li>
+                    <li class="page-item" v-show="recyclePageInfo.current + 1 <= recyclePageInfo.totalPage" v-on:click="recyclePageClick(recyclePageInfo.current + 1)">
+                        <a class="page-link" href="javascript:;" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </transition-group>
+        <div class="row min-vh-100" v-if="pageInfo.totalPage === 0">
+            <div class="col text-center text-info align-self-center">
+                <span>还未发布文章</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const vm = new Vue({
+        el: '#app',
+        data: {
+            showObj: {
+                showEditor: false,
+                showAll: true,
+                showRecycle: false,
+                showArticleEditor:false
+            },
+            articlesClass: {
+                'nav-link': true,
+                'active': true
+            },
+            editorClass: {
+                'nav-link': true,
+                'active': false
+            },
+            recycleClass: {
+                'nav-link': true,
+                'active': false
+            },
+            articles: '',
+            recycleArticles:'',
+            page: {
+                start: 0,
+                count: 8
+            },
+            recyclePage:{
+                start: 0,
+                count: 8
+            },
+            titleInput: {
+                'form-control': true,
+                'is-invalid': false,
+                'is-valid': false
+            },
+            titleField: '',
+            articleEditorData:{
+                title:'',
+                category:'',
+                description:'',
+                content:''
+            },
+            pageInfo:{
+                total: 0,
+                current:1,
+                totalPage:0
+            },
+            recyclePageInfo:{
+                total: 0,
+                current:1,
+                totalPage:0
+            }
+        },
+        mounted() {
+            this.getByPage(this.page.start, this.page.count);
+            this.getRecycleByPage(this.recyclePage.start,this.recyclePage.count);
+        },
+        methods: {
+            editArticle: function(title,description){
+                vm.showObj.showArticleEditor = true;
+                vm.articleEditorData.title = title;
+                vm.articleEditorData.description = description;
+                this.getArticle(title);
+            },
+            restoreArticle: function(title, index){
+                vm.recycleArticles.forEach(function(element,index){
+                    if(element.title === title){
+                        vm.recycleArticles.splice(index,1);
+                    }
+                });
+                this.restoreArticleFromServer('/admin/articles/restore',title,index);
+
+            },
+            deleteArticle: function(title,index){
+                this.deleteArticleFromServer('/admin/articles/delete',title,index);
+                console.log("article index = " +index);
+            },
+            deleteRecycleArticle: function(title,index){
+                this.deleteArticleFromServer('/admin/articles/deleteRecycle',title);
+                vm.recycleArticles.forEach(function(element,index){
+                    if(element.title === title){
+                        vm.recycleArticles.splice(index,1);
+                    }
+                });
+                if (index === 0 && this.recycleArticles.length === 0){
+                    this.getRecycleByPage(0,8);
+                    this.recyclePageInfo.current = 1;
+                    this.recyclePageInfo.totalPage = this.recyclePageInfo.totalPage - 1;
+                }else{
+                    this.getRecycleByPage(this.recyclePage.start,this.recyclePage.count);
+                }
+            },
+            submitUpdate: function(event){
+                event.stopPropagation();
+                this.updateArticle();
+            },
+            cancelUpdate:function(event){
+                this.showObj.showArticleEditor = false;
+            },
+            deleteArticleFromServer: function(url,title,index){
+                axios.post(url,{
+                    timeout: 1000,
+                    data: title,
+                    responseType: 'json'
+                }).then(function(response){
+                    vm.getRecycleByPage(0,8);
+                    vm.articles.forEach(function(element,index){
+                        if(element.title === title){
+                            vm.articles.splice(index,1);
+                        }
+                    });
+                    if (vm.articleEditorData.title === title){
+                        vm.articleEditorData.title = '';
+                        vm.articleEditorData.category = '';
+                        vm.articleEditorData.description = '';
+                        vm.showObj.showArticleEditor = false;
+                    }
+                    if (index === 0 && vm.articles.length === 0){
+                        vm.getByPage(0,8);
+                        vm.pageInfo.current = 1;
+                        vm.pageInfo.totalPage = this.pageInfo.totalPage - 1;
+                    }else{
+                        vm.getByPage(vm.page.start,vm.page.count);
+                    }
+
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            restoreArticleFromServer: function(url,title,index){
+                axios.post(url,{
+                    timeout: 1000,
+                    data: title,
+                    responseType: 'json'
+                }).then(function(response){
+                    if (index === 0 && vm.recycleArticles.length === 0){
+                        vm.getRecycleByPage(0,8);
+                        vm.recyclePageInfo.current = 1;
+                        vm.recyclePageInfo.totalPage = vm.recyclePageInfo.totalPage - 1;
+                    }else{
+                        vm.getRecycleByPage(vm.recyclePage.start,vm.recyclePage.count);
+                    }
+                    vm.getByPage(vm.page.start, vm.page.count);
+
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getArticle(title) {
+                axios.post('/admin/articles/edit', {
+                    timeout: 1000,
+                    data: title,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.articleEditorData.category = response.data.category;
+                    vm.articleEditorData.content = response.data.content;
+                    postEditor.value(response.data.content);
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getByPage: function (start, count) {
+                let obj = {
+                    'start': start,
+                    'count': count
+                };
+                axios.post('/admin/articles/outline', {
+                    timeout: 1000,
+                    data: obj,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.page.start = start;
+                    vm.articles = response.data.articles;
+                    let total = response.data.total;
+                    let page = total / 8;
+                    if (page < 1){
+                        page = 1;
+                    }else{
+                        page = Math.ceil(total / 8);
+                    }
+                    vm.pageInfo.total = total;
+                    vm.pageInfo.totalPage = page;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getRecycleByPage(start, count) {
+                let obj = {
+                    'start': start,
+                    'count': count
+                };
+                axios.post('/admin/articles/recycled', {
+                    timeout: 1000,
+                    data: obj,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.recyclePage.start = start;
+                    vm.recycleArticles = response.data.articles;
+                    let total = response.data.total;
+                    let page = total / 8;
+                    if (page < 1){
+                        page = 1;
+                    }else{
+                        page = Math.ceil(total / 8);
+                    }
+                    vm.recyclePageInfo.total = total;
+                    vm.recyclePageInfo.totalPage = page;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            updateArticle: function(){
+                let updatedArticle = vm.articleEditorData;
+                axios.post('/admin/articles/update', {
+                    timeout: 1000,
+                    data: updatedArticle,
+                    responseType: 'json'
+                }).then(function (response) {
+                    console.log(response.data);
+                    if (response.data){
+                        vm.getByPage(vm.page.start,vm.page.count);
+                        alert("修改完成！");
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            showAccordingly: function (event) {
+                if (event.target.text === "所有文章") {
+                    this.showObj.showAll = true;
+                    this.showObj.showEditor = false;
+                    this.showObj.showRecycle = false;
+                    this.articlesClass.active = true;
+                    this.editorClass.active = false;
+                    this.recycleClass.active = false;
+                }
+                if (event.target.text === "写文章") {
+                    this.showObj.showAll = false;
+                    this.showObj.showEditor = true;
+                    this.showObj.showRecycle = false;
+                    this.articlesClass.active = false;
+                    this.editorClass.active = true;
+                    this.recycleClass.active = false;
+                }
+                if (event.target.text === "回收站") {
+                    this.showObj.showAll = false;
+                    this.showObj.showEditor = false;
+                    this.showObj.showRecycle = true;
+                    this.articlesClass.active = false;
+                    this.editorClass.active = false;
+                    this.recycleClass.active = true;
+                }
+            },
+            validateTitle: function (event) {
+                axios.post('/admin/articles/validateTitle', {
+                    timeout: 1000,
+                    data: this.titleField,
+                    responseType: 'json'
+                }).then(function (response) {
+                    if (!response.data) {
+                        vm.titleInput["is-invalid"] = true;
+                        vm.titleInput["is-valid"] = false;
+                    } else {
+                        vm.titleInput["is-invalid"] = false;
+                        vm.titleInput["is-valid"] = true;
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            pageClick:function (n) {
+                vm.pageInfo.current = n;
+                let startIndex = (n -1) * 8;
+                this.getByPage(startIndex,8);
+            },
+            recyclePageClick: function (n) {
+                vm.recyclePageInfo.current = n;
+                let startIndex = (n -1) * 8;
+                this.getRecycleByPage(startIndex,8);
+            }
+        },
+        filters: {
+            truncateContent: function (value) {
+                if (value.length <= 28) {
+                    return value;
+                }
+                value = value.substring(0, 25) + '...';
+                return value;
+            }
+        },
+
+
+    });
+
+
+    const postEditor = new SimpleMDE({
+        autofocus: true,
+        element:document.getElementById("contentEditor")
+    });
+    postEditor.codemirror.on("change", function(){
+        vm.articleEditorData.content = postEditor.value();
+    });
+    postEditor.value(vm.articleEditorData.content);
+
+    const postCreator = new SimpleMDE({
+        autofocus: true,
+        // autosave: {
+        //     enabled: true,
+        //     uniqueId: "MyUniqueID",
+        //     delay: 1000,
+        // },
+        element: document.getElementById("content")
+    });
+</script>
+</body>
+</html>

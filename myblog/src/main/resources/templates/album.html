@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:svg="http://www.w3.org/2000/svg">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="/images/favicon.ico"/>
+    <script src="/js/vue.js" th:src="@{/js/vue.js}"></script>
+    <script th:src="@{/webjars/axios/0.19.0/dist/axios.js}"></script>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script th:src="@{/js/jquery-3.3.1.js}"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script th:src="@{/js/bootstrap.min.js}"></script>
+    <link rel="stylesheet" th:href="@{/css/common.css}" type="text/css">
+    <script src="/js/common.js"></script>
+    <!--[if lt IE 9]>
+    <script src="/js/html5shiv.js"></script>
+    <script src="/js/respond.min.js"></script>
+    <![endif]-->
+    <title>长弓林夕 | 分类</title>
+    <style>
+        .sidebar-container .card{
+            transition: all 0.5s;
+            box-sizing: border-box;
+            border-radius: 8px;
+        }
+        .sidebar-container .card:hover{
+            transform: translateY(5px);
+            -moz-box-shadow: 10px 10px 5px #888888; /* 老的 Firefox */
+            box-shadow: 0px 0px 10px #888888;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <transition-group appear name="top-appear" tag="div">
+        <div class="header-container fixed-top" key="nav" style="font-size: 1.25rem" th:insert="~{fragments :: head}"></div>
+        <div class="logo-container" key="logo" th:insert="~{fragments :: blog_log}"></div>
+        <div class="container " key="category-container">
+            <div class="jumbotron jumbotron-fluid pb-1" style="background: none">
+                <div class="container pl-0 pr-0">
+                    <h1 class="display-4 d-inline-block" id="album" th:text="${album}"></h1>
+                    <hr/>
+                </div>
+            </div>
+        </div>
+        <div class="container sidebar-container mb-5" key="post-side">
+            <div class="row" v-for="(value, name) in imagesArray">
+                <div class="col-md-12 col-sm-12 mt-4">
+                    <h5 class="card-title">{{ name }}</h5>
+                </div>
+                <div class="col-lg-6 col-md-6 col-sm-12 mb-4" v-for="img in value">
+                    <div class="card">
+                        <img v-bind:src="'/files/' + img.logoFile" class="card-img-top" alt="...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </transition-group>
+    <transition appear name="footer-appear">
+        <div class="footer-container" th:insert="~{fragments :: foot}"></div>
+    </transition>
+
+    <div th:insert="~{fragments :: tb-controller}">
+    </div>
+</div>
+<script>
+    let title = $('#album').text();
+    document.title = '长弓林夕 | ' + title;
+    var vm = new Vue({
+        el:'#app',
+        data:{
+            currentScrollH: 1,
+            currentScrollT:0,
+            buttonClasses:{
+                'btn': true,
+                'btn-success':false,
+                'float-right':true,
+                'btn-outline-warning':true,
+                'pr-3':true,
+                'pl-3':true
+            },
+            show:false,
+            isMain:true,
+            imagesArray:[],
+            articleTags:'',
+            mostPopular:[],
+            categories:[]
+        },
+        created:function(){
+            this.scrollT = document.documentElement.scrollTop;
+            this.scrollH = document.documentElement.scrollHeight;
+            window.addEventListener('scroll', this.handleScroll);
+        },
+        mounted() {
+            this.getImagesByName();
+            this.getAllTags();
+            this.getMostPopular();
+            this.getAllCategories();
+        },
+        destroyed () {
+            window.removeEventListener('scroll', this.handleScroll);
+        },
+        methods:{
+            getAllCategories:function(){
+                axios.post('/articles/category/all', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    console.log(response.data);
+                    vm.categories = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getMostPopular: function(){
+                axios.post('/posts/mostPopular', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.mostPopular = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getAllTags: function () {
+                axios.post('/sidebar/tags', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    vm.articleTags = response.data
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getImagesByName: function(){
+                axios.post('/archive/album', {
+                    timeout: 1000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    console.log(response.data);
+                    vm.imagesArray = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+            toggleClass:function(){
+                this.buttonClasses["btn-success"]=!this.buttonClasses["btn-success"];
+                this.buttonClasses["btn-outline-warning"]=!this.buttonClasses["btn-outline-warning"];
+            },
+            toTop: function () {
+                if (navigator.userAgent.toLowerCase().indexOf("edge")>0){
+                    $(document).scrollTop(0);
+                    return;
+                }
+                document.documentElement.scrollTo({
+                    top:0,
+                    behavior:'smooth'
+                });
+            },
+            toBottom:function(){
+                if (navigator.userAgent.toLowerCase().indexOf("edge")>0){
+                    $(document).scrollTop(document.documentElement.scrollHeight);
+                    return;
+                }
+                document.documentElement.scrollTo({
+                    top:document.documentElement.scrollHeight,
+                    behavior:'smooth'
+                });
+            },
+            handleScroll: function(event) {
+                this.scrollH = document.documentElement.scrollHeight;
+                this.scrollT = document.documentElement.scrollTop;
+            }
+        },
+        computed:{
+            scrollPercent: function(){
+                let sbHeight = window.innerHeight * (window.innerHeight / document.body.offsetHeight) * 3;
+                if(this.currentScrollT==0){
+                    sbHeight = 0;
+                }
+                return Number.parseFloat(((this.currentScrollT + sbHeight) / this.currentScrollH).toFixed(3));
+            },
+            scrollT: {
+                get:function () {
+                    return this.currentScrollT;
+                },
+                set:function (newVal) {
+                    this.currentScrollT = newVal;
+                }
+            },
+            scrollH: {
+                get:function () {
+                    return this.currentScrollH;
+                },
+                set:function (newVal) {
+                    this.currentScrollH = newVal;
+                }
+            },
+            computedProgress: function () {
+                let str = ',300';
+                return this.scrollPercent * 220 + str;
+            },
+            defaultStyle:function () {
+                return {
+                    strokeDasharray: '0,300',
+                    transition: 'all .5s ease-in-out'
+                }
+            },
+            computedStyle: function () {
+                return {
+                    strokeDasharray: this.computedProgress,
+                    transition: 'all .5s ease-in-out'
+                }
+            }
+        },
+    });
+    $('body').click(function(){
+        vm.$data.show=false;
+    });
+</script>
+</body>
+</html>
